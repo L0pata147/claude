@@ -8,24 +8,32 @@ const modeBadgeEl = document.getElementById('mode-badge');
 const updatedEl = document.getElementById('updated');
 
 const UNIT = 4;
-const ROOM_W = 20 * UNIT;
-const ROOM_H = 16 * UNIT;
+const ROOM_W = 24 * UNIT;
+const ROOM_H = 20 * UNIT;
 const GAP = 3 * UNIT;
 const WALL_PAD = 4 * UNIT;
 const ROOF_H = 10 * UNIT;
 const DOOR_W = 10 * UNIT;
 const DOOR_H = 14 * UNIT;
+const ROOM_INSET = UNIT;
+const INTERIOR_W = (ROOM_W - 2 * ROOM_INSET) / UNIT;
+const INTERIOR_H = (ROOM_H - 2 * ROOM_INSET) / UNIT;
 
 const BRICK_A = '#4b3b34';
 const BRICK_B = '#5a463d';
 const ROOF_A = '#7a2f2f';
 const ROOF_B = '#8f3a3a';
 const FRAME = '#2b1d15';
-const LIT = '#ffd76b';
-const LIT_SHADE = '#f0b429';
-const DARK = '#14141f';
-const DARK_EDGE = '#2a3550';
 const ALERT = '#ff4d4d';
+
+const SIL = '#232848';
+const SIL2 = '#2c3358';
+const SIL_WALL = '#161a2c';
+const SIL_FLOOR = '#10131f';
+
+function blink(time, period = 400) {
+  return Math.floor(time / period) % 2 === 0;
+}
 
 const params = new URLSearchParams(location.search);
 const dataUrl = params.get('dataUrl');
@@ -56,6 +64,207 @@ function roomRect(index) {
 
 function isAlert(c) {
   return c.status === 'running' && (c.cpu > 80 || c.ram > 85);
+}
+
+const THEME_RULES = [
+  { key: 'media', words: ['jellyfin', 'plex', 'emby', 'kodi', 'media', 'stream'] },
+  { key: 'network', words: ['pihole', 'adguard', 'dns', 'router', 'network', 'unbound'] },
+  { key: 'smarthome', words: ['homeassistant', 'hass', 'domoticz', 'smarthome'] },
+  { key: 'storage', words: ['nextcloud', 'owncloud', 'syncthing', 'storage', 'cloud', 'samba', 'nas'] },
+  { key: 'dev', words: ['gitea', 'gitlab', 'git', 'code', 'jenkins', 'forgejo'] },
+  { key: 'backup', words: ['backup', 'restic', 'borg', 'duplicati', 'rsync', 'snapshot'] },
+  { key: 'database', words: ['postgres', 'mysql', 'mariadb', 'influx', 'database', 'redis', 'mongo'] },
+  { key: 'security', words: ['vpn', 'wireguard', 'tailscale', 'security', 'firewall', 'vault'] },
+  { key: 'monitoring', words: ['prometheus', 'grafana', 'monitor', 'metrics', 'zabbix', 'uptime'] },
+];
+
+function classify(name) {
+  const n = name.toLowerCase();
+  for (const rule of THEME_RULES) {
+    if (rule.words.some(w => n.includes(w))) return rule.key;
+  }
+  return 'generic';
+}
+
+const THEMES = {
+  media: {
+    label: 'Obývák s TV',
+    wall: '#2a2438',
+    floor: '#1c1830',
+    draw(r, mode, time) {
+      r(6, 3, 10, 7, mode === 'dark' ? SIL : '#141018');
+      r(7, 4, 8, 5, mode === 'dark' ? SIL2 : '#274b6b');
+      if (mode === 'lit') {
+        const barX = 7 + Math.floor((time / 250) % 8);
+        r(barX, 4, 1, 5, '#bfe3ff');
+      }
+      r(9, 10, 4, 1, mode === 'dark' ? SIL : '#141018');
+      r(3, 11, 16, 2, mode === 'dark' ? SIL : '#5c2c2c');
+      r(3, 13, 16, 3, mode === 'dark' ? SIL2 : '#7a3b3b');
+      r(5, 16, 12, 1, mode === 'dark' ? SIL : '#4a2f52');
+    },
+  },
+  network: {
+    label: 'Síť / DNS',
+    wall: '#1c2b2e',
+    floor: '#131f21',
+    draw(r, mode, time) {
+      r(4, 12, 14, 1, mode === 'dark' ? SIL : '#2e3d40');
+      r(8, 9, 6, 3, mode === 'dark' ? SIL2 : '#1c2426');
+      r(10, 7, 1, 2, mode === 'dark' ? SIL : '#3a4a4d');
+      r(13, 7, 1, 2, mode === 'dark' ? SIL : '#3a4a4d');
+      [9, 11, 13].forEach((x, i) => {
+        r(x, 10, 1, 1, mode === 'dark' ? SIL : (blink(time, 300 + i * 150) ? '#6bffb0' : '#3a6b52'));
+      });
+    },
+  },
+  smarthome: {
+    label: 'Smart home',
+    wall: '#20263a',
+    floor: '#161a29',
+    draw(r, mode, time) {
+      r(5, 4, 12, 6, mode === 'dark' ? SIL : '#141a2c');
+      let i = 0;
+      for (let row = 0; row < 2; row++) {
+        for (let col = 0; col < 3; col++) {
+          const x = 7 + col * 3;
+          const y = 6 + row * 3;
+          const cycle = (i + Math.floor(time / 600)) % 3;
+          const color = mode === 'dark' ? SIL2 : ['#5bd6c8', '#e0b25b', '#7b8fe0'][cycle];
+          r(x, y, 2, 2, color);
+          i++;
+        }
+      }
+      r(9, 15, 3, 2, mode === 'dark' ? SIL2 : '#4a5a7a');
+    },
+  },
+  storage: {
+    label: 'Úložiště / cloud',
+    wall: '#1b2440',
+    floor: '#121a33',
+    draw(r, mode, time) {
+      r(4, 3, 14, 10, mode === 'dark' ? SIL : '#101830');
+      [6, 9, 12].forEach(y => r(4, y, 14, 1, mode === 'dark' ? SIL_WALL : '#0c1226'));
+      const boxRows = [
+        [[5, 3], [9, 4], [14, 3]],
+        [[5, 5], [11, 3], [15, 2]],
+        [[5, 2], [8, 6], [15, 2]],
+      ];
+      boxRows.forEach((row, ri) => {
+        row.forEach(([x, w]) => {
+          const color = mode === 'dark' ? SIL2 : (ri % 2 === 0 ? '#3a6bd6' : '#5a8bf0');
+          r(x, 4 + ri * 3, w, 2, color);
+        });
+      });
+      r(16, 3, 1, 1, mode === 'dark' ? SIL2 : (blink(time, 500) ? '#6bd6ff' : '#2a5a7a'));
+    },
+  },
+  dev: {
+    label: 'Vývoj / Git',
+    wall: '#242030',
+    floor: '#181521',
+    draw(r, mode, time) {
+      r(4, 12, 14, 2, mode === 'dark' ? SIL : '#2e2438');
+      r(9, 11, 6, 1, mode === 'dark' ? SIL : '#141018');
+      r(9, 7, 6, 4, mode === 'dark' ? SIL : '#141018');
+      r(10, 8, 4, 3, mode === 'dark' ? SIL2 : '#173318');
+      if (mode === 'lit' && blink(time, 600)) {
+        r(10, 8, 2, 1, '#7cff9b');
+      }
+      r(15, 8, 1, 4, mode === 'dark' ? SIL : '#3a2f22');
+      r(14, 7, 3, 2, mode === 'dark' ? SIL2 : '#ffdf8a');
+    },
+  },
+  backup: {
+    label: 'Zálohy',
+    wall: '#2a2420',
+    floor: '#1c1712',
+    draw(r, mode) {
+      r(4, 10, 6, 4, mode === 'dark' ? SIL : '#5a3d24');
+      r(11, 7, 7, 7, mode === 'dark' ? SIL2 : '#4a3120');
+      r(6, 14, 5, 4, mode === 'dark' ? SIL : '#3d2a1a');
+      if (mode === 'lit') {
+        r(6, 10, 2, 4, '#7a5a34');
+        r(14, 7, 1, 7, '#6a4c2c');
+        r(8, 14, 1, 4, '#5c4228');
+      }
+    },
+  },
+  database: {
+    label: 'Databáze',
+    wall: '#1a1a2e',
+    floor: '#121223',
+    draw(r, mode, time) {
+      for (let i = 0; i < 4; i++) {
+        const x = 5 + i * 4;
+        r(x, 4, 3, 10, mode === 'dark' ? SIL : '#232a4a');
+        r(x + 1, 5, 1, 1, mode === 'dark' ? SIL2 : (blink(time, 350 + i * 90) ? '#6bffe0' : '#2a5a52'));
+      }
+    },
+  },
+  security: {
+    label: 'VPN / zabezpečení',
+    wall: '#241c24',
+    floor: '#181218',
+    draw(r, mode) {
+      const c = mode === 'dark' ? SIL : '#9fb4c9';
+      r(8, 4, 6, 2, c);
+      r(7, 6, 8, 2, c);
+      r(8, 8, 6, 2, c);
+      r(9, 10, 4, 2, c);
+      r(10, 12, 2, 1, c);
+      r(10, 8, 1, 1, mode === 'dark' ? SIL_WALL : '#241c24');
+    },
+  },
+  monitoring: {
+    label: 'Monitoring',
+    wall: '#1a2438',
+    floor: '#121a2b',
+    draw(r, mode, time) {
+      [3, 12].forEach((sx, si) => {
+        r(sx, 4, 8, 6, mode === 'dark' ? SIL : '#101828');
+        [1, 3, 5, 7].forEach((ox, j) => {
+          const h = mode === 'dark' ? 2 : clamp(1 + Math.round((Math.sin(time / 500 + j + si) + 1) * 1.5), 1, 4);
+          const color = mode === 'dark' ? SIL2 : (si === 0 ? '#6bffb0' : '#ffce6b');
+          r(sx + ox, 9 - h, 1, h, color);
+        });
+      });
+    },
+  },
+  generic: {
+    label: 'Místnost',
+    wall: '#241f30',
+    floor: '#18141f',
+    draw(r, mode) {
+      r(4, 11, 8, 2, mode === 'dark' ? SIL : '#42355c');
+      r(4, 13, 8, 3, mode === 'dark' ? SIL2 : '#5c4a7a');
+      r(14, 14, 3, 2, mode === 'dark' ? SIL : '#5a4632');
+      r(14, 10, 1, 4, mode === 'dark' ? SIL2 : '#3a7a4a');
+      r(16, 10, 1, 4, mode === 'dark' ? SIL2 : '#3a7a4a');
+      r(15, 9, 1, 2, mode === 'dark' ? SIL2 : '#4a8a5a');
+      r(18, 8, 1, 6, mode === 'dark' ? SIL : '#3a2f22');
+      r(17, 6, 3, 2, mode === 'dark' ? SIL2 : '#ffdf8a');
+    },
+  },
+};
+
+function renderRoom(ctx, ox, oy, container, time) {
+  const theme = THEMES[classify(container.name)];
+  const running = container.status === 'running';
+  const r = (gx, gy, gw, gh, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(ox + gx * UNIT, oy + gy * UNIT, gw * UNIT, gh * UNIT);
+  };
+
+  const floorH = 4;
+  r(0, 0, INTERIOR_W, INTERIOR_H - floorH, running ? theme.wall : SIL_WALL);
+  r(0, INTERIOR_H - floorH, INTERIOR_W, floorH, running ? theme.floor : SIL_FLOOR);
+  theme.draw(r, running ? 'lit' : 'dark', time);
+
+  if (running && isAlert(container) && blink(time, 400)) {
+    ctx.fillStyle = 'rgba(255, 60, 60, 0.4)';
+    ctx.fillRect(ox, oy, INTERIOR_W * UNIT, INTERIOR_H * UNIT);
+  }
 }
 
 function drawBrickWall(width, wallTop, wallH) {
@@ -95,28 +304,7 @@ function drawWindow(rect, container, time) {
   ctx.fillStyle = FRAME;
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-  const inset = UNIT;
-  const ix = rect.x + inset;
-  const iy = rect.y + inset;
-  const iw = rect.w - inset * 2;
-  const ih = rect.h - inset * 2;
-
-  if (container.status !== 'running') {
-    ctx.fillStyle = DARK;
-    ctx.fillRect(ix, iy, iw, ih);
-    ctx.strokeStyle = DARK_EDGE;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
-  } else if (isAlert(container)) {
-    const blink = Math.floor(time / 400) % 2 === 0;
-    ctx.fillStyle = blink ? ALERT : LIT;
-    ctx.fillRect(ix, iy, iw, ih);
-  } else {
-    ctx.fillStyle = LIT;
-    ctx.fillRect(ix, iy, iw, ih / 2);
-    ctx.fillStyle = LIT_SHADE;
-    ctx.fillRect(ix, iy + ih / 2, iw, ih / 2);
-  }
+  renderRoom(ctx, rect.x + ROOM_INSET, rect.y + ROOM_INSET, container, time);
 
   ctx.fillStyle = FRAME;
   ctx.fillRect(rect.x + rect.w / 2 - 1, rect.y, 2, rect.h);
@@ -161,7 +349,8 @@ function handleMove(evt) {
   }
 
   const c = containers[hit];
-  tooltip.innerHTML = `<strong>${c.name}</strong> (CT ${c.id})<br>
+  const roomLabel = THEMES[classify(c.name)].label;
+  tooltip.innerHTML = `<strong>${c.name}</strong> (CT ${c.id}) — ${roomLabel}<br>
     stav: ${c.status}${isAlert(c) ? ' ⚠️' : ''}<br>
     CPU: ${c.cpu}% · RAM: ${c.ram}%`;
   tooltip.style.left = `${evt.clientX + 14}px`;
