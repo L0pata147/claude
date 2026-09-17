@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixel Home Lab</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>🏠 Pixel Home Lab</h1>
+    <div class="topbar-info">
+      <span id="host-name">–</span>
+      <span id="mode-badge" class="badge">simulace</span>
+      <span id="updated">–</span>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="house" width="640" height="480"></canvas>
+    <div id="tooltip" class="tooltip hidden"></div>
+  </main>
+
+  <aside class="legend">
+    <h2>Legenda</h2>
+    <div class="legend-item"><span class="swatch lit"></span> Běží (running)</div>
+    <div class="legend-item"><span class="swatch alert"></span> Vysoké CPU/RAM (&gt;80 %)</div>
+    <div class="legend-item"><span class="swatch dark"></span> Zastaveno (stopped)</div>
+    <p class="legend-note">
+      Každé okno = jeden LXC/CT na hostu Proxmoxu. Najetím myší zobrazíte detail.
+      Data na této stránce jsou simulovaná pro účely veřejného demo/portfolia –
+      viz <code>backend/</code> pro napojení na reálný Prometheus/Proxmox API.
+    </p>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "host": "neodbornaskola",
+  "updated": "2026-09-17T18:00:00Z",
+  "containers": [
+    { "id": "107", "name": "prometheus",   "status": "running", "cpu": 14, "ram": 38 },
+    { "id": "101", "name": "pihole",       "status": "running", "cpu": 3,  "ram": 21 },
+    { "id": "108", "name": "homeassistant","status": "running", "cpu": 22, "ram": 55 },
+    { "id": "110", "name": "nextcloud",    "status": "running", "cpu": 91, "ram": 88 },
+    { "id": "112", "name": "gitea",        "status": "stopped", "cpu": 0,  "ram": 0  },
+    { "id": "115", "name": "media",        "status": "running", "cpu": 47, "ram": 62 },
+    { "id": "118", "name": "backup",       "status": "stopped", "cpu": 0,  "ram": 0  },
+    { "id": "120", "name": "vpn",          "status": "running", "cpu": 6,  "ram": 15 },
+    { "id": "121", "name": "dns2",         "status": "running", "cpu": 4,  "ram": 12 }
+  ]
+}

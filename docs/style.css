@@ -1,0 +1,124 @@
+:root {
+  --bg: #10121c;
+  --panel: #1a1d2b;
+  --text: #e8e6f0;
+  --muted: #8a8ca0;
+  --accent: #ffd76b;
+  --alert: #ff4d4d;
+  --border: #33364a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.topbar-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.badge {
+  background: #2a2d40;
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+}
+
+canvas {
+  image-rendering: pixelated;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+}
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 10;
+}
+
+.tooltip.hidden { display: none; }
+
+.legend {
+  padding: 1rem 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.legend h2 {
+  font-size: 0.95rem;
+  margin: 0 0 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  display: inline-block;
+  border: 1px solid var(--border);
+}
+
+.swatch.lit { background: var(--accent); }
+.swatch.alert { background: var(--alert); }
+.swatch.dark { background: #12121c; }
+
+.legend-note {
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.legend-note code {
+  color: var(--text);
+}
