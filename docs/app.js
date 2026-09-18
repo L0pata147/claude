@@ -35,6 +35,15 @@ function blink(time, period = 400) {
   return Math.floor(time / period) % 2 === 0;
 }
 
+function shade(hex, amount) {
+  const num = parseInt(hex.slice(1), 16);
+  const clamp255 = v => Math.max(0, Math.min(255, v));
+  const r = clamp255(((num >> 16) & 0xff) + Math.round(255 * amount));
+  const g = clamp255(((num >> 8) & 0xff) + Math.round(255 * amount));
+  const b = clamp255((num & 0xff) + Math.round(255 * amount));
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
 const params = new URLSearchParams(location.search);
 const dataUrl = params.get('dataUrl');
 const isLive = Boolean(dataUrl);
@@ -98,9 +107,18 @@ const THEMES = {
         const barX = 7 + Math.floor((time / 250) % 8);
         r(barX, 4, 1, 5, '#bfe3ff');
       }
-      r(9, 10, 4, 1, mode === 'dark' ? SIL : '#141018');
-      r(3, 11, 16, 2, mode === 'dark' ? SIL : '#5c2c2c');
-      r(3, 13, 16, 3, mode === 'dark' ? SIL2 : '#7a3b3b');
+      r(8, 10, 6, 1, mode === 'dark' ? SIL : '#141018');
+      r(9, 11, 1, 1, mode === 'dark' ? SIL : '#141018');
+      r(14, 11, 1, 1, mode === 'dark' ? SIL : '#141018');
+
+      r(3, 11, 2, 5, mode === 'dark' ? SIL : '#5c2c2c');
+      r(17, 11, 2, 5, mode === 'dark' ? SIL : '#5c2c2c');
+      r(5, 11, 12, 2, mode === 'dark' ? SIL : '#5c2c2c');
+      r(5, 13, 12, 3, mode === 'dark' ? SIL2 : '#7a3b3b');
+      if (mode === 'lit') {
+        r(7, 13, 3, 1, '#8f4747');
+        r(12, 13, 3, 1, '#8f4747');
+      }
       r(5, 16, 12, 1, mode === 'dark' ? SIL : '#4a2f52');
     },
   },
@@ -238,12 +256,20 @@ const THEMES = {
     draw(r, mode) {
       r(4, 11, 8, 2, mode === 'dark' ? SIL : '#42355c');
       r(4, 13, 8, 3, mode === 'dark' ? SIL2 : '#5c4a7a');
+
       r(14, 14, 3, 2, mode === 'dark' ? SIL : '#5a4632');
-      r(14, 10, 1, 4, mode === 'dark' ? SIL2 : '#3a7a4a');
-      r(16, 10, 1, 4, mode === 'dark' ? SIL2 : '#3a7a4a');
-      r(15, 9, 1, 2, mode === 'dark' ? SIL2 : '#4a8a5a');
-      r(18, 8, 1, 6, mode === 'dark' ? SIL : '#3a2f22');
-      r(17, 6, 3, 2, mode === 'dark' ? SIL2 : '#ffdf8a');
+      r(15, 9, 1, 5, mode === 'dark' ? SIL2 : '#3a7a4a');
+      r(14, 8, 1, 3, mode === 'dark' ? SIL2 : '#4a8a5a');
+      r(16, 8, 1, 3, mode === 'dark' ? SIL2 : '#4a8a5a');
+      r(15, 6, 1, 3, mode === 'dark' ? SIL2 : '#57a066');
+
+      r(18, 12, 1, 4, mode === 'dark' ? SIL : '#3a2f22');
+      r(17, 9, 3, 1, mode === 'dark' ? SIL : '#3a2f22');
+      if (mode === 'lit') {
+        r(17, 6, 3, 3, '#ffdf8a');
+      } else {
+        r(17, 7, 3, 2, SIL2);
+      }
     },
   },
 };
@@ -251,15 +277,40 @@ const THEMES = {
 function renderRoom(ctx, ox, oy, container, time) {
   const theme = THEMES[classify(container.name)];
   const running = container.status === 'running';
-  const r = (gx, gy, gw, gh, color) => {
+  const mode = running ? 'lit' : 'dark';
+
+  const fill = (gx, gy, gw, gh, color) => {
     ctx.fillStyle = color;
     ctx.fillRect(ox + gx * UNIT, oy + gy * UNIT, gw * UNIT, gh * UNIT);
   };
 
+  // Beveled block: flat fill for tiny/dark pieces, a light/dark edge on
+  // bigger lit ones so furniture reads as solid rather than a flat swatch.
+  const r = (gx, gy, gw, gh, color) => {
+    fill(gx, gy, gw, gh, color);
+    if (mode === 'dark' || gw < 2 || gh < 2) return;
+    ctx.fillStyle = shade(color, 0.22);
+    ctx.fillRect(ox + gx * UNIT, oy + gy * UNIT, gw * UNIT, UNIT);
+    ctx.fillRect(ox + gx * UNIT, oy + gy * UNIT, UNIT, gh * UNIT);
+    ctx.fillStyle = shade(color, -0.22);
+    ctx.fillRect(ox + gx * UNIT, oy + (gy + gh - 1) * UNIT, gw * UNIT, UNIT);
+    ctx.fillRect(ox + (gx + gw - 1) * UNIT, oy + gy * UNIT, UNIT, gh * UNIT);
+  };
+
   const floorH = 4;
-  r(0, 0, INTERIOR_W, INTERIOR_H - floorH, running ? theme.wall : SIL_WALL);
-  r(0, INTERIOR_H - floorH, INTERIOR_W, floorH, running ? theme.floor : SIL_FLOOR);
-  theme.draw(r, running ? 'lit' : 'dark', time);
+  const wallColor = running ? theme.wall : SIL_WALL;
+  const floorColor = running ? theme.floor : SIL_FLOOR;
+  fill(0, 0, INTERIOR_W, INTERIOR_H - floorH, wallColor);
+  fill(0, INTERIOR_H - floorH - 1, INTERIOR_W, 1, shade(wallColor, -0.2));
+
+  for (let ty = 0; ty < floorH; ty += 2) {
+    for (let tx = 0; tx < INTERIOR_W; tx += 2) {
+      const alt = ((tx / 2) + (ty / 2)) % 2 === 0;
+      fill(tx, INTERIOR_H - floorH + ty, 2, 2, alt ? floorColor : shade(floorColor, -0.1));
+    }
+  }
+
+  theme.draw(r, mode, time);
 
   if (running && isAlert(container) && blink(time, 400)) {
     ctx.fillStyle = 'rgba(255, 60, 60, 0.4)';
