@@ -274,8 +274,59 @@ const THEMES = {
   },
 };
 
+let spriteSet = null;
+
+const scratch = document.createElement('canvas');
+const scratchCtx = scratch.getContext('2d');
+
+async function loadSprites() {
+  try {
+    const res = await fetch('data/sprites.json', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const manifest = await res.json();
+    if (!manifest.sheet) return null;
+
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error(`nelze načíst ${manifest.sheet}`));
+      image.src = manifest.sheet;
+    });
+    return { image, themes: manifest.themes || {} };
+  } catch (err) {
+    console.warn('Spritesheet se nepoužije, kreslím vlastní pixel art:', err);
+    return null;
+  }
+}
+
+// Stopped containers reuse the sprite's shape as a flat silhouette so the
+// room stays recognisable with the lights off.
+function drawSprite(ctx, image, item, dx, dy, dark) {
+  const scale = item.scale || 1;
+  const dw = item.sw * scale;
+  const dh = item.sh * scale;
+
+  if (!dark) {
+    ctx.drawImage(image, item.sx, item.sy, item.sw, item.sh, dx, dy, dw, dh);
+    return;
+  }
+
+  scratch.width = item.sw;
+  scratch.height = item.sh;
+  scratchCtx.imageSmoothingEnabled = false;
+  scratchCtx.clearRect(0, 0, item.sw, item.sh);
+  scratchCtx.globalCompositeOperation = 'source-over';
+  scratchCtx.drawImage(image, item.sx, item.sy, item.sw, item.sh, 0, 0, item.sw, item.sh);
+  scratchCtx.globalCompositeOperation = 'source-atop';
+  scratchCtx.fillStyle = SIL;
+  scratchCtx.fillRect(0, 0, item.sw, item.sh);
+  ctx.drawImage(scratch, 0, 0, item.sw, item.sh, dx, dy, dw, dh);
+}
+
 function renderRoom(ctx, ox, oy, container, time) {
-  const theme = THEMES[classify(container.name)];
+  const themeKey = classify(container.name);
+  const theme = THEMES[themeKey];
+  const sprites = spriteSet && spriteSet.themes[themeKey];
   const running = container.status === 'running';
   const mode = running ? 'lit' : 'dark';
 
@@ -298,8 +349,8 @@ function renderRoom(ctx, ox, oy, container, time) {
   };
 
   const floorH = 4;
-  const wallColor = running ? theme.wall : SIL_WALL;
-  const floorColor = running ? theme.floor : SIL_FLOOR;
+  const wallColor = running ? ((sprites && sprites.wall) || theme.wall) : SIL_WALL;
+  const floorColor = running ? ((sprites && sprites.floor) || theme.floor) : SIL_FLOOR;
   fill(0, 0, INTERIOR_W, INTERIOR_H - floorH, wallColor);
   fill(0, INTERIOR_H - floorH - 1, INTERIOR_W, 1, shade(wallColor, -0.2));
 
@@ -310,7 +361,13 @@ function renderRoom(ctx, ox, oy, container, time) {
     }
   }
 
-  theme.draw(r, mode, time);
+  if (sprites && sprites.items) {
+    sprites.items.forEach(item => {
+      drawSprite(ctx, spriteSet.image, item, ox + item.gx * UNIT, oy + item.gy * UNIT, mode === 'dark');
+    });
+  } else {
+    theme.draw(r, mode, time);
+  }
 
   if (running && isAlert(container) && blink(time, 400)) {
     ctx.fillStyle = 'rgba(255, 60, 60, 0.4)';
@@ -366,6 +423,7 @@ function render(time) {
   if (!layout || containers.length === 0) return;
   canvas.width = layout.width;
   canvas.height = layout.height;
+  ctx.imageSmoothingEnabled = false;
 
   ctx.fillStyle = '#0b0c14';
   ctx.fillRect(0, 0, layout.width, layout.height);
@@ -455,6 +513,8 @@ async function fetchLive() {
 }
 
 async function init() {
+  spriteSet = await loadSprites();
+
   const res = await fetch('data/state.demo.json', { cache: 'no-store' });
   applyState(await res.json());
 

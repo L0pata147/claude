@@ -41,6 +41,7 @@ docs/            statický frontend (GitHub Pages)
   style.css
   data/
     state.demo.json   ukázková/demo data pro veřejné demo
+    sprites.json      volitelné napojení na spritesheet (výchozí: vypnuto)
 
 backend/         volitelný poller pro reálné nasazení v labu
   poller.py      dotazuje se Proxmox API (`/nodes/<node>/lxc`) na stav a
@@ -60,6 +61,28 @@ Datové schéma (co frontend očekává):
   ]
 }
 ```
+
+## Vlastní pixel art nábytek (spritesheet)
+
+Interiéry místností kreslí ve výchozím stavu přímo `app.js` (žádné externí
+assety, nic k řešení s licencemi). Pokud chceš použít hotový pixel art
+balíček, stačí ho zapojit přes `docs/data/sprites.json`:
+
+1. PNG spritesheet vlož do `docs/assets/`
+2. v `sprites.json` nastav `"sheet": "assets/<soubor>.png"`
+3. pro každý motiv vyplň výřezy (`sx/sy/sw/sh`) a pozici v místnosti
+   (`gx/gy` v mřížce 22 × 18 polí); vzor je v klíči `_example`
+
+Motiv, který v `themes` chybí, se dál kreslí vestavěným pixel artem, takže
+balíček jde nasazovat postupně. Zastavené kontejnery se z spritu vykreslí
+jako tmavá silueta automaticky, alert překryv funguje stejně jako předtím.
+
+Na licence pozor: placené balíčky (itch.io apod.) **necommituj** do
+veřejného repozitáře. Pro veřejné demo se hodí CC0 assety (např. kenney.nl)
+nebo prostě nechat `sheet` prázdné. Většina hotových interiérových balíčků
+je navíc kreslená shora (top-down pro RPG), zatímco místnosti tady jsou
+z boku — čelní kusy (TV, lednice, regály, lampy) sednou, půdorysné
+(postele, stoly, koberce) ne.
 
 ## Spuštění reálného pollingu
 

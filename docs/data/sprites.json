@@ -1,0 +1,37 @@
+{
+  "_readme": [
+    "Volitelné napojení na spritesheet s pixel art nábytkem. Dokud je 'sheet'",
+    "prázdné, kreslí se vestavěný pixel art z app.js (žádné externí assety).",
+    "",
+    "Postup: 1) vlož PNG spritesheet do docs/assets/, 2) nastav 'sheet' na jeho",
+    "cestu, 3) do 'themes' přidej motivy podle vzoru v '_example' níž.",
+    "",
+    "sx/sy/sw/sh = výřez ze spritesheetu v pixelech",
+    "gx/gy       = pozice v mřížce místnosti (22 x 18 polí, 1 pole = 4 px)",
+    "scale       = volitelné zvětšení spritu (výchozí 1)",
+    "wall/floor  = volitelné přebarvení zdi a podlahy, ať ladí s balíčkem",
+    "",
+    "Motivy: media, network, smarthome, storage, dev, backup, database,",
+    "security, monitoring, generic. Motiv, který v 'themes' chybí, se dokreslí",
+    "vestavěným pixel artem, takže je možné balíček nasazovat postupně.",
+    "Zastavené kontejnery se z spritu vykreslí jako tmavá silueta automaticky.",
+    "",
+    "POZOR na licence: placené balíčky (itch.io apod.) necommituj do veřejného",
+    "repozitáře. Pro veřejné demo použij CC0 assety (např. kenney.nl) nebo nech",
+    "'sheet' prázdné a ponech vestavěný pixel art."
+  ],
+
+  "_example": {
+    "media": {
+      "wall": "#3b3550",
+      "floor": "#2a2440",
+      "items": [
+        { "sx": 0, "sy": 0, "sw": 32, "sh": 32, "gx": 5, "gy": 3 },
+        { "sx": 0, "sy": 32, "sw": 48, "sh": 16, "gx": 3, "gy": 12 }
+      ]
+    }
+  },
+
+  "sheet": "",
+  "themes": {}
+}
